@@ -21,7 +21,6 @@ from report_generator import (
 
 st.set_page_config(
     page_title="Dependency Risk Radar",
-    page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -37,95 +36,86 @@ REQUEST_TIMEOUT = 20
 st.markdown(
     """
     <style>
-    .stApp {
-        background: #0b1120;
-        color: #e5e7eb;
+    :root {
+        --rr-bg: #080e18;
+        --rr-surface: #101a29;
+        --rr-surface-2: #142237;
+        --rr-border: #26374d;
+        --rr-text: #edf3fb;
+        --rr-muted: #96a8bf;
+        --rr-teal: #46d5c0;
     }
+    .stApp { background: var(--rr-bg); color: var(--rr-text); }
+    [data-testid="stHeader"] { background: rgba(8,14,24,.92); }
+    [data-testid="stSidebar"] { background: #0b1422; border-right: 1px solid var(--rr-border); }
+    [data-testid="stSidebar"] > div:first-child { padding-top: 1.15rem; }
+    h1,h2,h3,h4 { color: var(--rr-text) !important; letter-spacing: -.025em; }
+    h1 { font-size: 2.05rem !important; font-weight: 800 !important; }
+    h2 { font-size: 1.45rem !important; font-weight: 760 !important; }
+    h3 { font-size: 1.08rem !important; font-weight: 740 !important; }
+    p, label, [data-testid="stCaptionContainer"] { color: var(--rr-muted); }
+    .rr-hero { padding: 28px 30px; border-radius: 18px; border: 1px solid #2b4059; background: linear-gradient(115deg,#152941 0%,#101a2a 64%,#10242b 100%); margin: 4px 0 22px; position: relative; overflow: hidden; }
+    .rr-hero:after { content: ''; position: absolute; width: 210px; height: 210px; border: 1px solid rgba(70,213,192,.16); border-radius: 50%; right: -54px; top: -86px; box-shadow: 0 0 0 25px rgba(70,213,192,.025),0 0 0 52px rgba(70,213,192,.02); }
+    .rr-eyebrow { color: var(--rr-teal); font-size: .71rem; font-weight: 850; letter-spacing: .18em; text-transform: uppercase; margin-bottom: 10px; }
+    .rr-hero-title { font-size: 1.9rem; line-height: 1.15; color: #f6f9ff; font-weight: 820; margin-bottom: 10px; max-width: 780px; }
+    .rr-hero-copy { color: #aabbd0; font-size: .96rem; line-height: 1.65; max-width: 760px; margin: 0; }
+    .rr-section-head { display:flex; justify-content:space-between; align-items:flex-end; gap:12px; margin: 22px 0 12px; }
+    .rr-section-title { color:#edf3fb; font-size:1.12rem; font-weight:780; }
+    .rr-section-sub { color:#91a4bb; font-size:.82rem; margin-top:4px; }
+    .rr-card { background: linear-gradient(150deg,#132238,#0f1928); border:1px solid var(--rr-border); border-radius:15px; padding:19px 20px; min-height:132px; }
+    .rr-card-top { color:#9db0c7; text-transform:uppercase; font-size:.7rem; font-weight:800; letter-spacing:.12em; margin-bottom:13px; }
+    .rr-card-value { color:#f3f7fd; font-size:2rem; line-height:1.05; font-weight:830; letter-spacing:-.04em; }
+    .rr-card-note { color:#9bacc1; font-size:.81rem; line-height:1.45; margin-top:10px; }
+    .rr-step { background:#101b2b; border:1px solid #26384e; border-radius:13px; padding:16px; min-height:124px; }
+    .rr-step-num { color:var(--rr-teal); font-size:.72rem; font-weight:850; letter-spacing:.12em; margin-bottom:13px; }
+    .rr-step-title { color:#eff5fc; font-size:.98rem; font-weight:760; margin-bottom:6px; }
+    .rr-step-copy { color:#9baec4; font-size:.82rem; line-height:1.5; }
+    .rr-pill { display:inline-block; border:1px solid #315168; color:#a6f0e4; background:#112d35; border-radius:999px; padding:5px 10px; font-size:.72rem; font-weight:750; margin:3px 4px 0 0; }
+    .rr-risk-panel { background:#101a29; border:1px solid #2a3b51; border-radius:15px; padding:21px; height:100%; }
+    .rr-risk-number { color:#f5f8fc; font-size:2.65rem; font-weight:850; line-height:1; margin:8px 0; }
+    .rr-risk-caption { color:#9bacc1; font-size:.84rem; line-height:1.5; }
+    div[data-testid="stMetric"] { background:#101a29; border:1px solid #26374d; border-radius:13px; padding:15px 16px; min-height:102px; }
+    div[data-testid="stMetricLabel"] { color:#9eb0c6; font-size:.78rem; }
+    div[data-testid="stMetricValue"] { color:#f5f8fd; font-weight:800; }
+    [data-testid="stTabs"] { border-bottom:1px solid var(--rr-border); margin-top:4px; }
+    [data-testid="stTabs"] button { font-weight:700; padding:.72rem .85rem; }
+    [data-testid="stTabs"] button[aria-selected="true"] { color:var(--rr-teal); }
+    .stButton > button,.stDownloadButton > button,.stFormSubmitButton > button { border-radius:10px; min-height:2.75rem; font-weight:750; border:1px solid #344a62; transition:all .15s ease; }
+    .stButton > button[kind="primary"],.stFormSubmitButton > button[kind="primary"] { background:#13877d; border-color:#27ad9e; color:white; }
+    .stButton > button[kind="primary"]:hover,.stFormSubmitButton > button[kind="primary"]:hover { background:#159b8e; border-color:#52d9c8; color:white; }
+    [data-testid="stDataFrame"] { border:1px solid var(--rr-border); border-radius:12px; overflow:hidden; }
+    [data-testid="stFileUploader"] { background:#0f1a2a; border:1px dashed #3a536d; border-radius:13px; padding:10px; }
+    input,textarea,[data-baseweb="select"] > div { background-color:#0f1a2a !important; border-color:#34485f !important; }
+    hr { border-color:#26374d; }
+    a { color:#65e0d0 !important; }
+    [data-testid="stProgressBar"] > div > div { background:#36c7b4; }
+    @media(max-width:760px) { .rr-hero {padding:20px;} .rr-hero-title{font-size:1.5rem;} .rr-card{min-height:110px;} }
+    
+    /* Sidebar ecosystem cards */
+    .rr-ecosystem-heading { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:2px 0 6px; }
+    .rr-ecosystem-kicker { color:#54d8c4; font-size:.62rem; font-weight:850; letter-spacing:.17em; margin-bottom:4px; }
+    .rr-ecosystem-title { color:#eef4fc; font-size:.96rem; font-weight:780; letter-spacing:-.02em; line-height:1.25; }
+    .rr-ecosystem-count { display:flex; align-items:center; justify-content:center; min-width:35px; height:30px; border:1px solid #2b465b; border-radius:8px; background:#122534; color:#83e7d8; font-size:.76rem; font-weight:850; letter-spacing:.08em; }
+    .rr-ecosystem-summary { color:#8fa3bb; font-size:.74rem; line-height:1.5; margin:0 0 13px; }
+    .rr-ecosystem-card { position:relative; background:linear-gradient(145deg,#142338 0%,#0f1a29 100%); border:1px solid #2a3c52; border-radius:12px; padding:12px 11px 11px; margin:0 0 10px; overflow:hidden; }
+    .rr-ecosystem-card:before { content:""; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,#3ccbb7,#315b70 72%,transparent); }
+    .rr-ecosystem-card-head { display:flex; align-items:center; gap:9px; min-width:0; }
+    .rr-ecosystem-monogram { width:35px; height:35px; min-width:35px; display:flex; align-items:center; justify-content:center; border-radius:9px; font-size:.77rem; font-weight:850; letter-spacing:-.03em; }
+    .rr-python-mark { color:#9ed8f5; background:#18364a; border:1px solid #2c5b73; }
+    .rr-node-mark { color:#a9e6bd; background:#18382f; border:1px solid #2b604a; }
+    .rr-ecosystem-identity { flex:1; min-width:0; }
+    .rr-ecosystem-name { color:#f1f6fc; font-size:.89rem; font-weight:800; line-height:1.2; }
+    .rr-ecosystem-registry { color:#8298b1; font-size:.56rem; font-weight:800; letter-spacing:.1em; margin-top:4px; }
+    .rr-ecosystem-status { color:#6ee1ce; border:1px solid #285d5b; background:#102f34; border-radius:5px; padding:3px 5px; font-size:.55rem; font-weight:850; letter-spacing:.06em; white-space:nowrap; }
+    .rr-ecosystem-rule { height:1px; background:#273a50; margin:11px 0 8px; }
+    .rr-ecosystem-detail { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:4px 0; font-size:.69rem; line-height:1.35; }
+    .rr-ecosystem-detail span { color:#8fa3ba; flex:0 0 auto; }
+    .rr-ecosystem-detail strong { color:#d7e2ef; text-align:right; font-weight:650; overflow-wrap:anywhere; }
+    .rr-ecosystem-capability { border-top:1px solid #273a50; color:#a7b8cb; font-size:.68rem; line-height:1.4; margin-top:7px; padding-top:8px; }
+    .rr-ecosystem-source { display:flex; flex-wrap:wrap; align-items:center; gap:6px; border:1px solid #26384b; background:#0d1927; border-radius:8px; padding:9px 10px; color:#8fa2b8; font-size:.65rem; line-height:1.35; }
+    .rr-ecosystem-source strong { color:#d8e4f1; font-weight:750; }
+    .rr-source-indicator { display:inline-block; width:6px; height:6px; border-radius:50%; background:#49d2bb; box-shadow:0 0 0 3px rgba(73,210,187,.12); margin-right:2px; }
 
-    [data-testid="stSidebar"] {
-        background: #101827;
-        border-right: 1px solid #243247;
-    }
-
-    h1, h2, h3 {
-        color: #f8fafc;
-    }
-
-    .hero-card, .info-card {
-        background: linear-gradient(135deg, #111c2f, #15243a);
-        border: 1px solid #293b54;
-        border-radius: 14px;
-        padding: 18px;
-        margin-bottom: 12px;
-    }
-
-    .hero-title {
-        font-size: 1.8rem;
-        font-weight: 750;
-        color: #f8fafc;
-        margin-bottom: 6px;
-    }
-
-    .hero-subtitle, .info-card-text {
-        color: #aab8cc;
-        font-size: 0.95rem;
-        line-height: 1.55;
-    }
-
-    .section-label {
-        color: #5eead4;
-        font-size: 0.76rem;
-        font-weight: 750;
-        letter-spacing: 0.13em;
-        text-transform: uppercase;
-        margin-bottom: 0.4rem;
-    }
-
-    .info-card-title {
-        color: #f1f5f9;
-        font-size: 1.05rem;
-        font-weight: 700;
-        margin-bottom: 6px;
-    }
-
-    div[data-testid="stMetric"] {
-        background: #111c2f;
-        border: 1px solid #293b54;
-        padding: 14px;
-        border-radius: 12px;
-    }
-
-    div[data-testid="stMetricLabel"] {
-        color: #aab8cc;
-    }
-
-    .stButton > button[kind="primary"],
-    .stFormSubmitButton > button[kind="primary"] {
-        background: #0f9f91;
-        border: 1px solid #14b8a6;
-        color: white;
-        font-weight: 700;
-        border-radius: 9px;
-    }
-
-    .stButton > button[kind="primary"]:hover,
-    .stFormSubmitButton > button[kind="primary"]:hover {
-        background: #0d887d;
-        border-color: #5eead4;
-        color: white;
-    }
-
-    [data-testid="stTabs"] button {
-        font-weight: 650;
-    }
-
-    hr {
-        border-color: #293b54;
-    }
-
-    a {
-        color: #5eead4 !important;
-    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -560,16 +550,19 @@ def display_security_dashboard(results, scan_name="Security Scan"):
         for finding in findings
     })
 
-    st.divider()
     st.markdown(
-        '<div class="section-label">Scan results</div>',
+        f"""
+        <div class="page-hero">
+            <div class="page-kicker">Scan results</div>
+            <div class="page-hero-title">{scan_name}</div>
+            <p class="page-hero-copy">
+                Review dependency exposure, prioritize vulnerability findings,
+                and inspect evidence-based remediation guidance. Severity and
+                fix information depend on the available OSV advisory data.
+            </p>
+        </div>
+        """,
         unsafe_allow_html=True,
-    )
-    st.subheader(scan_name)
-    st.caption(
-        "Severity and remediation guidance are based on available OSV "
-        "metadata. Unknown means the record did not provide enough usable "
-        "information for a reliable classification."
     )
 
     overview_tab, findings_tab, dependencies_tab, reports_tab = st.tabs(
@@ -586,88 +579,100 @@ def display_security_dashboard(results, scan_name="Security Scan"):
     # -----------------------------------------------------
 
     with overview_tab:
-        st.markdown("### Security overview")
-
-        col1, col2, col3, col4 = st.columns(4)
-        col1.metric("Dependencies checked", total_dependencies)
-        col2.metric("Vulnerable packages", vulnerable_packages)
-        col3.metric("Vulnerability records", len(findings))
-        col4.metric("Failed checks", failed_scans)
-
-        st.caption(
-            f"Successful checks: {successful_scans} · "
-            f"Failed or incomplete checks: {failed_scans}"
+        st.markdown(
+            '<div class="rr-section-head"><div><div class="rr-section-title">Security posture</div><div class="rr-section-sub">A quick view of the dependency scan and its highest-priority exposure.</div></div></div>',
+            unsafe_allow_html=True,
         )
 
-        st.markdown("### Severity distribution")
-        severity_columns = st.columns(6)
+        metric_cols = st.columns(4, gap="medium")
+        metric_data = [
+            ("DEPENDENCIES CHECKED", total_dependencies, "Packages and lockfile entries reviewed"),
+            ("VULNERABLE PACKAGES", vulnerable_packages, "Unique package-version pairs with findings"),
+            ("VULNERABILITY RECORDS", len(findings), "Advisories returned by OSV"),
+            ("INCOMPLETE CHECKS", failed_scans, "Checks that need investigation"),
+        ]
+        for col, (label, value, note) in zip(metric_cols, metric_data):
+            with col:
+                st.markdown(
+                    f'<div class="rr-card"><div class="rr-card-top">{label}</div><div class="rr-card-value">{value}</div><div class="rr-card-note">{note}</div></div>',
+                    unsafe_allow_html=True,
+                )
 
-        for column, label in zip(
-            severity_columns,
-            ["Critical", "High", "Medium", "Low", "None", "Unknown"],
-        ):
-            column.metric(label, severity_counts[label])
+        st.markdown(
+            '<div class="rr-section-head"><div><div class="rr-section-title">Severity breakdown</div><div class="rr-section-sub">Severity categories from the available advisory metadata.</div></div></div>',
+            unsafe_allow_html=True,
+        )
+        chart_col, risk_col = st.columns([1.7, 1], gap="large")
+        severity_labels = ["Critical", "High", "Medium", "Low", "None", "Unknown"]
+        with chart_col:
+            chart_df = pd.DataFrame({
+                "Severity": severity_labels,
+                "Vulnerabilities": [severity_counts[x] for x in severity_labels],
+            })
+            if findings:
+                st.bar_chart(chart_df.set_index("Severity"), height=290, use_container_width=True)
+            else:
+                st.markdown(
+                    '<div class="rr-card"><div class="rr-card-top">No findings to visualize</div><div class="rr-card-note">Run a scan to populate the severity chart and vulnerability summary.</div></div>',
+                    unsafe_allow_html=True,
+                )
+        with risk_col:
+            critical = severity_counts["Critical"]
+            high = severity_counts["High"]
+            medium = severity_counts["Medium"]
+            critical_high = critical + high
+            if critical:
+                posture = "Critical findings detected"
+                posture_copy = "Investigate critical findings first and confirm whether the affected code is reachable."
+            elif high:
+                posture = "High-priority review needed"
+                posture_copy = "Review high-severity findings and available fixed versions before lower-priority work."
+            elif findings:
+                posture = "Review findings"
+                posture_copy = "No critical or high findings were classified, but review the remaining advisories."
+            elif failed_scans:
+                posture = "Scan needs attention"
+                posture_copy = "Some checks did not complete. Resolve those errors before interpreting this as a clean scan."
+            else:
+                posture = "No known findings returned"
+                posture_copy = "The scan returned no known vulnerability records for the checked versions."
+            st.markdown(
+                f'<div class="rr-risk-panel"><div class="rr-card-top">Risk snapshot</div><div class="rr-risk-number">{critical_high}</div><div class="rr-risk-caption">Critical + high severity findings</div><hr><div style="color:#edf3fb;font-weight:760;margin:12px 0 7px">{posture}</div><div class="rr-risk-caption">{posture_copy}</div><div style="margin-top:16px"><span class="rr-pill">Critical {critical}</span><span class="rr-pill">High {high}</span><span class="rr-pill">Medium {medium}</span></div></div>',
+                unsafe_allow_html=True,
+            )
+            if findings:
+                known = sum(severity_counts[x] for x in ["Critical", "High", "Medium", "Low", "None"])
+                coverage = known / len(findings)
+                st.markdown("**Severity data coverage**")
+                st.progress(coverage)
+                st.caption(f"{coverage:.0%} of findings have a recognized severity category")
 
+        st.markdown(
+            '<div class="rr-section-head"><div><div class="rr-section-title">Priority queue</div><div class="rr-section-sub">The most urgent findings appear first. Open Vulnerability Findings for filters and full details.</div></div></div>',
+            unsafe_allow_html=True,
+        )
         if findings:
-            st.markdown("### Highest-priority findings")
-
             priority_rows = []
             for finding in findings:
                 priority_rows.append({
-                    "Package": finding.get("Package", "Unknown"),
-                    "Version": finding.get("Version", "Unknown"),
-                    "Vulnerability ID": finding.get(
-                        "Vulnerability ID", "Unknown"
-                    ),
                     "Severity": finding.get("risk_severity", "Unknown"),
+                    "Package": finding.get("Package", "Unknown"),
+                    "Installed": finding.get("Version", "Unknown"),
+                    "Advisory": finding.get("Vulnerability ID", "Unknown"),
                     "CVSS": finding.get("cvss_score"),
-                    "Fixed Versions": ", ".join(
-                        map(str, finding.get("fixed_versions", []))
-                    ),
+                    "Known fix": ", ".join(map(str, finding.get("fixed_versions", []))) or "Not listed",
                 })
-
-            severity_order = {
-                "Critical": 0,
-                "High": 1,
-                "Medium": 2,
-                "Low": 3,
-                "None": 4,
-                "Unknown": 5,
-            }
-
-            priority_rows.sort(
-                key=lambda row: (
-                    severity_order.get(row["Severity"], 5),
-                    -(
-                        row["CVSS"]
-                        if isinstance(row["CVSS"], (int, float))
-                        else -1
-                    ),
-                )
-            )
-
-            st.dataframe(
-                pd.DataFrame(priority_rows[:10]),
-                use_container_width=True,
-                hide_index=True,
-            )
-
+            order = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3, "None": 4, "Unknown": 5}
+            priority_rows.sort(key=lambda row: (order.get(row["Severity"], 5), -(row["CVSS"] if isinstance(row["CVSS"], (int, float)) else -1)))
+            st.dataframe(pd.DataFrame(priority_rows[:8]), use_container_width=True, hide_index=True)
         elif failed_scans:
-            st.warning(
-                "Some dependency checks failed. Review the Dependencies tab."
-            )
+            st.warning("Some checks failed. Review the Dependencies tab for errors before treating this scan as clean.")
         else:
-            st.success("No known vulnerability records were returned.")
+            st.success("No known vulnerability records were returned for the checked dependencies.")
 
-        if findings and severity_counts["Unknown"] == len(findings):
-            st.warning(
-                "All findings currently have unknown severity. The OSV "
-                "records may not provide usable CVSS vectors or severity "
-                "labels. Inspect the detailed findings and debug data."
-            )
-
-        if summary:
-            with st.expander("Summary data"):
+        with st.expander("Scan metadata"):
+            st.write({"Successful checks": successful_scans, "Failed or incomplete checks": failed_scans, "Dependencies checked": total_dependencies})
+            if summary:
                 st.json(summary)
 
     # -----------------------------------------------------
@@ -979,79 +984,54 @@ def display_security_dashboard(results, scan_name="Security Scan"):
 
 def render_python_scanner():
     st.markdown(
-        '<div class="section-label">Python ecosystem</div>',
-        unsafe_allow_html=True,
-    )
-    st.header("Python Package Scanner")
-    st.write(
-        "Enter package names with exact versions for version-specific checks."
-    )
-
-    st.markdown(
         """
-        <div class="info-card">
-            <div class="info-card-title">Example input</div>
-            <div class="info-card-text">
-                requests==2.31.0<br>
-                flask==3.0.0<br>
-                pandas==2.2.0
-            </div>
+        <div class="rr-hero">
+            <div class="rr-eyebrow">Scanner / 01 · PyPI</div>
+            <div class="rr-hero-title">Python package scan</div>
+            <p class="rr-hero-copy">Check exact package versions against known OSV advisories. Enter one dependency per line using package==version syntax.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-    with st.form("python_scan_form"):
-        package_input = st.text_area(
-            "Package specifications",
-            placeholder=(
-                "requests==2.31.0\n"
-                "flask==3.0.0\n"
-                "pandas==2.2.0"
-            ),
-            height=150,
+    input_col, guide_col = st.columns([1.65, 1], gap="large")
+    with input_col:
+        st.markdown("### Dependency input")
+        with st.form("python_scan_form"):
+            package_input = st.text_area(
+                "Package specifications",
+                placeholder="requests==2.31.0\nflask==3.0.0\npandas==2.2.0",
+                height=210,
+                help="Include exact versions so the scanner can check version-specific advisories.",
+            )
+            submitted = st.form_submit_button("Run Python security scan", type="primary", use_container_width=True)
+    with guide_col:
+        st.markdown(
+            '<div class="rr-card"><div class="rr-card-top">Input format</div><div style="color:#eff5fc;font-weight:760;margin-bottom:8px">One package per line</div><div class="rr-card-note" style="font-family:monospace;line-height:2">requests==2.31.0<br>flask==3.0.0<br>pandas==2.2.0</div><hr><div style="color:#eff5fc;font-weight:760;margin-bottom:7px">Before you scan</div><div class="rr-card-note">Use the versions installed in your environment. Missing or invalid versions can prevent a precise check.</div></div>',
+            unsafe_allow_html=True,
         )
-
-        submitted = st.form_submit_button(
-            "Run Python Security Scan",
-            type="primary",
-            use_container_width=True,
+        st.markdown(
+            '<div class="rr-card" style="margin-top:12px"><div class="rr-card-top">What you get</div><div class="rr-card-note">Vulnerability IDs, severity and CVSS where available, affected version information, known fixed versions, and downloadable reports.</div></div>',
+            unsafe_allow_html=True,
         )
 
     if submitted:
-        packages = [
-            line.strip()
-            for line in package_input.splitlines()
-            if line.strip()
-        ]
-
+        packages = [line.strip() for line in package_input.splitlines() if line.strip()]
         if not packages:
-            st.warning("Enter at least one package.")
+            st.warning("Enter at least one package specification.")
         else:
             clear_previous_results()
-
             results = []
-            progress = st.progress(0, text="Starting scan...")
-
+            progress = st.progress(0, text="Preparing scan...")
             for index, package in enumerate(packages):
-                progress.progress(
-                    (index + 1) / len(packages),
-                    text=f"Checking {package}...",
-                )
+                progress.progress((index + 1) / len(packages), text=f"Checking {package}...")
                 results.extend(run_python_scan([package]))
-
             progress.empty()
-
             st.session_state.python_scan_results = results
             st.session_state.python_scan_name = "Python Package Scan"
-
-            st.success(f"Processed {len(results)} package specification(s).")
+            st.success(f"Scan completed for {len(results)} package specification(s).")
 
     if st.session_state.python_scan_results is not None:
-        display_security_dashboard(
-            st.session_state.python_scan_results,
-            st.session_state.python_scan_name or "Python Package Scan",
-        )
+        display_security_dashboard(st.session_state.python_scan_results, st.session_state.python_scan_name or "Python Package Scan")
 
 
 # =========================================================
@@ -1060,70 +1040,58 @@ def render_python_scanner():
 
 def render_node_scanner():
     st.markdown(
-        '<div class="section-label">Node.js ecosystem</div>',
-        unsafe_allow_html=True,
-    )
-    st.header("Node.js Project Scanner")
-    st.write(
-        "Upload package-lock.json to inspect direct and transitive npm dependencies."
-    )
-
-    st.markdown(
         """
-        <div class="info-card">
-            <div class="info-card-title">Supported lockfiles</div>
-            <div class="info-card-text">
-                Upload a package-lock.json using lockfile version 2 or 3.
-            </div>
+        <div class="rr-hero">
+            <div class="rr-eyebrow">Scanner / 02 · npm</div>
+            <div class="rr-hero-title">Node.js project scan</div>
+            <p class="rr-hero-copy">Inspect the resolved npm dependency tree from package-lock.json, including transitive packages, and match versions against OSV vulnerability records.</p>
         </div>
         """,
         unsafe_allow_html=True,
     )
+    upload_col, guide_col = st.columns([1.55, 1], gap="large")
+    with upload_col:
+        st.markdown("### Project lockfile")
+        uploaded_file = st.file_uploader(
+            "Upload package-lock.json",
+            type=["json"],
+            key="node_lockfile_uploader",
+            help="Supported lockfile versions: 2 and 3.",
+        )
+        if uploaded_file is not None:
+            st.markdown(
+                f'<div class="rr-card"><div class="rr-card-top">Selected file</div><div style="color:#eff5fc;font-weight:760;overflow-wrap:anywhere">{uploaded_file.name}</div><div class="rr-card-note">{uploaded_file.size:,} bytes · Ready for parsing</div></div>',
+                unsafe_allow_html=True,
+            )
+        run_node = st.button(
+            "Run Node.js security scan",
+            type="primary",
+            use_container_width=True,
+            disabled=uploaded_file is None,
+            key="run_node_security_scan",
+        )
+    with guide_col:
+        st.markdown(
+            '<div class="rr-card"><div class="rr-card-top">Supported input</div><div style="color:#eff5fc;font-size:1.05rem;font-weight:780;margin-bottom:8px">package-lock.json</div><div class="rr-card-note">Use the lockfile generated by npm install or npm ci. It records the concrete dependency versions resolved for the project.</div><hr><div style="color:#eff5fc;font-weight:760;margin-bottom:7px">Included in the scan</div><div class="rr-card-note">Direct dependencies, transitive dependencies, vulnerability matches, severity details, and available remediation metadata.</div></div>',
+            unsafe_allow_html=True,
+        )
 
-    uploaded_file = st.file_uploader(
-        "Upload package-lock.json",
-        type=["json"],
-        key="node_lockfile_uploader",
-    )
-
-    if st.button(
-        "Run Node.js Security Scan",
-        type="primary",
-        use_container_width=True,
-        disabled=uploaded_file is None,
-        key="run_node_security_scan",
-    ):
+    if run_node and uploaded_file is not None:
         clear_previous_results()
-
         try:
-            # parse_package_lock expects JSON text, not a Python dictionary.
             lockfile_content = uploaded_file.getvalue().decode("utf-8")
-
-            with st.spinner("Parsing and scanning dependencies..."):
+            with st.spinner("Parsing lockfile and querying OSV..."):
                 results = run_node_scan(lockfile_content)
-
             st.session_state.node_scan_results = results
             st.session_state.node_scan_name = uploaded_file.name
-
-            st.success(
-                f"Scan processed {len(results)} dependencies."
-            )
-
-        except (
-            UnicodeDecodeError,
-            json.JSONDecodeError,
-            ValueError,
-        ) as exc:
+            st.success(f"Scan processed {len(results)} dependencies.")
+        except (UnicodeDecodeError, json.JSONDecodeError, ValueError) as exc:
             st.error(f"Unable to process package-lock.json: {exc}")
-
         except Exception as exc:
             st.error(f"Node.js scan failed: {exc}")
 
     if st.session_state.node_scan_results is not None:
-        display_security_dashboard(
-            st.session_state.node_scan_results,
-            st.session_state.node_scan_name or "Node.js Project Scan",
-        )
+        display_security_dashboard(st.session_state.node_scan_results, st.session_state.node_scan_name or "Node.js Project Scan")
 
 
 # =========================================================
@@ -1131,106 +1099,86 @@ def render_node_scanner():
 # =========================================================
 
 def render_overview():
+    """Render the product landing page and recent scan snapshots."""
     st.markdown(
-        '<div class="section-label">Workspace</div>',
+        """
+        <div class="rr-hero">
+            <div class="rr-eyebrow">Dependency security workspace</div>
+            <div class="rr-hero-title">Know what is inside your software.</div>
+            <p class="rr-hero-copy">Scan Python and Node.js dependencies against known vulnerability intelligence. Review severity, inspect affected versions, find available fixes, and export a clear report for your team.</p>
+            <div style="margin-top:16px"><span class="rr-pill">OSV vulnerability data</span><span class="rr-pill">CVSS severity</span><span class="rr-pill">Remediation guidance</span><span class="rr-pill">JSON / CSV reports</span></div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
-    st.header("Security workspace")
-    st.write(
-        "Scan dependencies, investigate known vulnerabilities, and review "
-        "remediation information."
+
+    st.markdown(
+        '<div class="rr-section-head"><div><div class="rr-section-title">Choose your scan type</div><div class="rr-section-sub">Start with a specific Python package list or scan an npm project lockfile.</div></div></div>',
+        unsafe_allow_html=True,
     )
-
-    col1, col2 = st.columns(2)
-
-    with col1:
+    py_col, node_col = st.columns(2, gap="large")
+    with py_col:
         st.markdown(
-            """
-            <div class="info-card">
-                <div class="info-card-title">Python Package Scan</div>
-                <div class="info-card-text">
-                    Check exact Python package versions against OSV.
-                </div>
-            </div>
-            """,
+            '<div class="rr-card"><div class="rr-card-top">01 / Python · PyPI</div><div style="color:#f2f7fd;font-size:1.2rem;font-weight:790;margin-bottom:8px">Package version scan</div><div class="rr-card-note">Check exact versions such as requests==2.31.0. Best for quick checks, bug triage, and verifying a single dependency.</div><div style="margin-top:14px"><span class="rr-pill">Exact versions</span><span class="rr-pill">Multi-package input</span></div></div>',
             unsafe_allow_html=True,
         )
-
-        if st.button("Open Python Scanner", use_container_width=True):
+        if st.button("Open Python scanner", type="primary", use_container_width=True, key="overview_open_python"):
             st.session_state.selected_scanner = "Python Package Scan"
             st.rerun()
-
-    with col2:
+    with node_col:
         st.markdown(
-            """
-            <div class="info-card">
-                <div class="info-card-title">Node.js Project Scan</div>
-                <div class="info-card-text">
-                    Analyze package-lock.json and check npm dependency versions.
-                </div>
-            </div>
-            """,
+            '<div class="rr-card"><div class="rr-card-top">02 / Node.js · npm</div><div style="color:#f2f7fd;font-size:1.2rem;font-weight:790;margin-bottom:8px">Project lockfile scan</div><div class="rr-card-note">Upload package-lock.json to inspect resolved direct and transitive dependency versions in one scan.</div><div style="margin-top:14px"><span class="rr-pill">package-lock.json</span><span class="rr-pill">Transitive packages</span></div></div>',
             unsafe_allow_html=True,
         )
-
-        if st.button("Open Node.js Scanner", use_container_width=True):
+        if st.button("Open Node.js scanner", type="primary", use_container_width=True, key="overview_open_node"):
             st.session_state.selected_scanner = "Node.js Project Scan"
             st.rerun()
 
-    st.markdown("### Security workflow")
+    st.markdown(
+        '<div class="rr-section-head"><div><div class="rr-section-title">How the analysis works</div><div class="rr-section-sub">A simple, traceable workflow from dependency input to actionable report.</div></div></div>',
+        unsafe_allow_html=True,
+    )
+    step_cols = st.columns(4, gap="medium")
+    steps = [
+        ("01", "Inventory", "Read package names and exact versions from your input or lockfile."),
+        ("02", "Match advisories", "Query OSV for known vulnerability records associated with each dependency."),
+        ("03", "Prioritize", "Review CVSS severity, affected ranges, and fixed versions when supplied."),
+        ("04", "Act and report", "Inspect remediation guidance and export findings as JSON or CSV."),
+    ]
+    for col, (num, title, description) in zip(step_cols, steps):
+        with col:
+            st.markdown(
+                f'<div class="rr-step"><div class="rr-step-num">STEP {num}</div><div class="rr-step-title">{title}</div><div class="rr-step-copy">{description}</div></div>',
+                unsafe_allow_html=True,
+            )
 
-    col1, col2, col3 = st.columns(3)
+    # Show a compact snapshot of the latest completed scans, without duplicating full dashboards.
+    scan_cards = []
+    for label, results_key, name_key in [
+        ("Python", "python_scan_results", "python_scan_name"),
+        ("Node.js", "node_scan_results", "node_scan_name"),
+    ]:
+        results = st.session_state.get(results_key)
+        if results is not None:
+            findings = enrich_findings(results)
+            counts = calculate_severity_counts(findings)
+            scan_cards.append((label, st.session_state.get(name_key) or f"{label} scan", len(results), len(findings), counts))
 
-    with col1:
+    if scan_cards:
         st.markdown(
-            """
-            <div class="info-card">
-                <div class="info-card-title">01 · Detect</div>
-                <div class="info-card-text">
-                    Query known vulnerability records from OSV.
-                </div>
-            </div>
-            """,
+            '<div class="rr-section-head"><div><div class="rr-section-title">Recent scan snapshots</div><div class="rr-section-sub">The latest results retained in this session.</div></div></div>',
             unsafe_allow_html=True,
         )
-
-    with col2:
-        st.markdown(
-            """
-            <div class="info-card">
-                <div class="info-card-title">02 · Prioritize and remediate</div>
-                <div class="info-card-text">
-                    Review severity, affected versions, and available fix information.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    with col3:
-        st.markdown(
-            """
-            <div class="info-card">
-                <div class="info-card-title">03 · Report</div>
-                <div class="info-card-text">
-                    Export findings and recommendations to JSON or CSV.
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
-    if st.session_state.python_scan_results is not None:
-        display_security_dashboard(
-            st.session_state.python_scan_results,
-            st.session_state.python_scan_name or "Previous Python Scan",
-        )
-
-    if st.session_state.node_scan_results is not None:
-        display_security_dashboard(
-            st.session_state.node_scan_results,
-            st.session_state.node_scan_name or "Previous Node.js Scan",
-        )
+        cols = st.columns(len(scan_cards), gap="large")
+        for col, (label, scan_name, dep_count, finding_count, counts) in zip(cols, scan_cards):
+            with col:
+                st.markdown(
+                    f'<div class="rr-card"><div class="rr-card-top">{label} scan</div><div style="color:#f2f7fd;font-size:1.05rem;font-weight:780;margin-bottom:12px">{scan_name}</div><div style="display:flex;gap:24px;flex-wrap:wrap"><div><div class="rr-card-value" style="font-size:1.55rem">{dep_count}</div><div class="rr-card-note">Dependencies</div></div><div><div class="rr-card-value" style="font-size:1.55rem">{finding_count}</div><div class="rr-card-note">Findings</div></div></div><div style="margin-top:12px"><span class="rr-pill">Critical {counts["Critical"]}</span><span class="rr-pill">High {counts["High"]}</span><span class="rr-pill">Medium {counts["Medium"]}</span></div></div>',
+                    unsafe_allow_html=True,
+                )
+                if st.button(f"Review {label} results", use_container_width=True, key=f"overview_review_{label.lower()}"):
+                    st.session_state.selected_scanner = "Python Package Scan" if label == "Python" else "Node.js Project Scan"
+                    st.rerun()
 
 
 # =========================================================
@@ -1238,8 +1186,9 @@ def render_overview():
 # =========================================================
 
 with st.sidebar:
-    st.markdown("## 🛡️ Risk Radar")
-    st.caption("Dependency security scanner")
+    st.markdown("## Dependency Risk Radar")
+    st.markdown('<div class="rr-eyebrow">SECURITY WORKSPACE</div>', unsafe_allow_html=True)
+    st.caption("Known vulnerability detection and remediation")
     st.divider()
 
     selected_page = st.radio(
@@ -1252,29 +1201,57 @@ with st.sidebar:
         label_visibility="collapsed",
     )
 
-    st.divider()
-    st.markdown("### Supported ecosystems")
-
     st.markdown(
         """
-        <div class="info-card">
-            <div class="info-card-title">Python · PyPI</div>
-            <div class="info-card-text">
-                Version-specific Python package checks.
+        <div class="rr-ecosystem-heading">
+            <div>
+                <div class="rr-ecosystem-kicker">COVERAGE</div>
+                <div class="rr-ecosystem-title">Supported ecosystems</div>
             </div>
+            <div class="rr-ecosystem-count">02</div>
         </div>
-        <div class="info-card">
-            <div class="info-card-title">Node.js · npm</div>
-            <div class="info-card-text">
-                Lockfile-based dependency analysis.
+        <div class="rr-ecosystem-summary">
+            Scan packages against known vulnerability advisories.
+        </div>
+
+        <div class="rr-ecosystem-card">
+            <div class="rr-ecosystem-card-head">
+                <div class="rr-ecosystem-monogram rr-python-mark">Py</div>
+                <div class="rr-ecosystem-identity">
+                    <div class="rr-ecosystem-name">Python</div>
+                    <div class="rr-ecosystem-registry">PACKAGE REGISTRY</div>
+                </div>
+                <div class="rr-ecosystem-status">SUPPORTED</div>
             </div>
+            <div class="rr-ecosystem-rule"></div>
+            <div class="rr-ecosystem-detail"><span>Registry</span><strong>PyPI</strong></div>
+            <div class="rr-ecosystem-detail"><span>Scan input</span><strong>Package + version</strong></div>
+            <div class="rr-ecosystem-capability">Version-specific vulnerability checks</div>
+        </div>
+
+        <div class="rr-ecosystem-card">
+            <div class="rr-ecosystem-card-head">
+                <div class="rr-ecosystem-monogram rr-node-mark">JS</div>
+                <div class="rr-ecosystem-identity">
+                    <div class="rr-ecosystem-name">Node.js</div>
+                    <div class="rr-ecosystem-registry">PACKAGE ECOSYSTEM</div>
+                </div>
+                <div class="rr-ecosystem-status">SUPPORTED</div>
+            </div>
+            <div class="rr-ecosystem-rule"></div>
+            <div class="rr-ecosystem-detail"><span>Registry</span><strong>npm</strong></div>
+            <div class="rr-ecosystem-detail"><span>Scan input</span><strong>package-lock.json</strong></div>
+            <div class="rr-ecosystem-capability">Direct and transitive dependency analysis</div>
+        </div>
+
+        <div class="rr-ecosystem-source">
+            <span class="rr-source-indicator"></span>
+            <span>Vulnerability intelligence</span>
+            <strong>OSV database</strong>
         </div>
         """,
         unsafe_allow_html=True,
     )
-
-    st.divider()
-    st.caption("Vulnerability intelligence: OSV database")
 
 if st.session_state.selected_scanner and selected_page == "Overview":
     selected_page = st.session_state.selected_scanner
