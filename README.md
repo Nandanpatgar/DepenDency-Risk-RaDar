@@ -2,25 +2,27 @@
 
 Identify risky dependencies. Understand why they are risky. Know what to fix.
 
-Dependency Risk Radar is a Streamlit app that checks Python and npm dependencies against the [OSV.dev](https://osv.dev/) vulnerability database. You give it a list of packages or a `package-lock.json`, and it shows which dependencies have known vulnerabilities, how severe they are, and lets you export the results.
+Dependency Risk Radar is a Streamlit app that checks Python and npm dependencies against the [OSV.dev](https://osv.dev/) vulnerability database. You give it a list of packages or a `package-lock.json`, and it shows which dependencies have known vulnerabilities, how severe they are, which versions fix them, and lets you export the results.
 
-<img width="2736" height="1496" alt="Dependency Risk Radar dashboard" src="https://github.com/user-attachments/assets/538a347f-6ad8-43cd-96aa-9091530a05cd" />
+<img width="2862" height="1472" alt="Screenshot 2026-10-28 135243" src="https://github.com/user-attachments/assets/32870995-42bb-4804-a642-d435d0f04556" />
+
 
 ## What it does
 
 - Scans Python packages (PyPI). Enter one `name==version` per line.
 - Scans npm projects. Upload a `package-lock.json` (lockfile v2 or v3) and every resolved dependency, including transitive ones, is checked.
 - Works out a severity for each finding (Critical, High, Medium, Low or Unknown) from the data OSV returns.
+- Shows fix guidance for each finding: the fixed versions and affected version ranges listed in the OSV record, or a note when the record doesn't give a fix.
 - Shows the results in four tabs: Overview, Vulnerability Findings, Dependencies and Reports.
 - Lets you filter findings by severity and search them, and filter dependencies by scan status.
-- Exports a JSON or CSV report with severity, CVSS score and the findings sorted by severity.
+- Exports a JSON or CSV report with severity, CVSS score, fixed versions, affected ranges and a remediation status, with findings sorted by severity.
 - Marks packages that could not be scanned as failed instead of treating them as safe.
 
 ### Still to do
 
 - Dependency graph
 - npm Registry checks (deprecation, publish history, license)
-- Upgrade and fix suggestions
+- Upgrade suggestions that take your project's version constraints into account
 - `package.json` support
 
 ## How it works
@@ -35,7 +37,7 @@ flowchart TD
     E --> F{Request succeeded?}
     F -->|Yes| G[Matching vulnerability records]
     F -->|No| H[Mark as scan failed]
-    G --> I[Work out severity for each record]
+    G --> I[Work out severity and fix info for each record]
     I --> J[Dashboard tabs]
     H --> J
     J --> K[Download JSON / CSV report]
@@ -49,6 +51,10 @@ Severity is never guessed. For each OSV record, the app checks in this order:
 2. A severity label provided by the database (for example a GitHub advisory label).
 3. Otherwise the severity is shown as Unknown.
 
+### Where fix information comes from
+
+Fixed versions are read from the affected ranges in each OSV record. If a record doesn't list a fixed version, the app says so and points you to the advisory instead of suggesting one. A listed fix is the version OSV reports, so check that it works with the rest of your project before upgrading.
+
 ## Tech stack
 
 Python, Streamlit, pandas, `requests`, `cvss`, and the OSV.dev API.
@@ -61,11 +67,12 @@ DepenDency-Risk-RaDar/
 ├── node_scanner.py        # package-lock.json parser
 ├── osv_client.py          # OSV.dev API client
 ├── severity_analyzer.py   # CVSS parsing and severity classification
-├── report_generator.py    # Summary metrics, prioritization, JSON and CSV reports
+├── report_generator.py    # Summary metrics, fix info, prioritization, JSON and CSV reports
 ├── requirements.txt
 └── tests/
     ├── test_node_scanner.py
     ├── test_osv_client.py
+    ├── test_remediation.py
     ├── test_report_generator.py
     └── test_severity_analyzer.py
 ```
