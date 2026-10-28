@@ -1,121 +1,121 @@
-# Dependency Risk Radar 
+# Dependency Risk Radar
 
-**Identify risky dependencies. Understand why they are risky. Know what to fix.**
+Identify risky dependencies. Understand why they are risky. Know what to fix.
 
-Dependency Risk Radar is a Streamlit app that checks software dependencies against the [OSV.dev](https://osv.dev/) vulnerability database. Scan a single Python package, or upload an npm `package-lock.json`, review a security overview, and download the results as JSON or CSV.
+Dependency Risk Radar is a Streamlit app that checks Python and npm dependencies against the [OSV.dev](https://osv.dev/) vulnerability database. You give it a list of packages or a `package-lock.json`, and it shows which dependencies have known vulnerabilities, how severe they are, and lets you export the results.
 
+<img width="2736" height="1496" alt="Dependency Risk Radar dashboard" src="https://github.com/user-attachments/assets/538a347f-6ad8-43cd-96aa-9091530a05cd" />
 
+## What it does
 
-<img width="2736" height="1496" alt="Screenshot 2026-10-28 122718" src="https://github.com/user-attachments/assets/538a347f-6ad8-43cd-96aa-9091530a05cd" />
+- Scans Python packages (PyPI). Enter one `name==version` per line.
+- Scans npm projects. Upload a `package-lock.json` (lockfile v2 or v3) and every resolved dependency, including transitive ones, is checked.
+- Works out a severity for each finding (Critical, High, Medium, Low or Unknown) from the data OSV returns.
+- Shows the results in four tabs: Overview, Vulnerability Findings, Dependencies and Reports.
+- Lets you filter findings by severity and search them, and filter dependencies by scan status.
+- Exports a JSON or CSV report with severity, CVSS score and the findings sorted by severity.
+- Marks packages that could not be scanned as failed instead of treating them as safe.
 
+### Still to do
 
-## ✨ Features
-
-**Available now**
-
-- **Python package scan:** check one PyPI package and exact version
-- **Node.js project scan:** upload a `package-lock.json` (lockfile v2 and v3) and scan every resolved npm dependency, including transitive ones
-- **Security overview dashboard:** total dependencies, successfully scanned, failed scans, packages with findings and vulnerability records
-- **Dependency results table:** package, version, scan status and record count at a glance
-- **Vulnerability details:** ID, aliases (e.g. CVE), summary, description and reference links for each match
-- **Downloadable reports:** export results as **JSON** or **CSV**
-- **Honest failures:** packages that couldn't be scanned are marked "Scan failed", never shown as safe
-
-**Planned**
-
-- Severity-based risk ranking
-- Dependency graph visualization
-- Package health checks (deprecation, publish history, license) via the npm Registry
-- Upgrade and remediation suggestions
+- Dependency graph
+- npm Registry checks (deprecation, publish history, license)
+- Upgrade and fix suggestions
 - `package.json` support
 
-## ⚙️ How It Works
+## How it works
 
 ```mermaid
 flowchart TD
-    A{Scan mode} -->|Python| B[Enter package name + version]
+    A{Scan mode} -->|Python| B[Enter name==version list]
     A -->|Node.js| C[Upload package-lock.json]
     C --> D[Parse resolved dependencies]
     B --> E[Query OSV.dev API]
     D --> E
     E --> F{Request succeeded?}
     F -->|Yes| G[Matching vulnerability records]
-    F -->|No| H[Mark as Scan failed / status unknown]
-    G --> I[Security overview + results table + details]
-    H --> I
-    I --> J[Download JSON / CSV report]
+    F -->|No| H[Mark as scan failed]
+    G --> I[Work out severity for each record]
+    I --> J[Dashboard tabs]
+    H --> J
+    J --> K[Download JSON / CSV report]
 ```
 
-##  Tech Stack
+### How severity is decided
 
-Python · [Streamlit](https://streamlit.io/) · `requests` · [OSV.dev API](https://osv.dev/)
+Severity is never guessed. For each OSV record, the app checks in this order:
 
-## Project Structure
+1. A CVSS v3 or v4 vector in the record. The score is calculated with the [`cvss`](https://pypi.org/project/cvss/) library and mapped to Low, Medium, High or Critical.
+2. A severity label provided by the database (for example a GitHub advisory label).
+3. Otherwise the severity is shown as Unknown.
+
+## Tech stack
+
+Python, Streamlit, pandas, `requests`, `cvss`, and the OSV.dev API.
+
+## Project structure
 
 ```text
 DepenDency-Risk-RaDar/
-├── app.py                # Streamlit UI, scan workflow and dashboard
-├── node_scanner.py       # package-lock.json parser
-├── osv_client.py         # OSV.dev API client
-├── report_generator.py   # Summary metrics, JSON and CSV reports
+├── app.py                 # Streamlit app: pages, scan workflow, dashboard
+├── node_scanner.py        # package-lock.json parser
+├── osv_client.py          # OSV.dev API client
+├── severity_analyzer.py   # CVSS parsing and severity classification
+├── report_generator.py    # Summary metrics, prioritization, JSON and CSV reports
 ├── requirements.txt
 └── tests/
     ├── test_node_scanner.py
     ├── test_osv_client.py
-    └── test_report_generator.py
+    ├── test_report_generator.py
+    └── test_severity_analyzer.py
 ```
 
-##  Getting Started
+## Running it locally
 
-Requires Python 3.10+ and Git.
+You need Python 3.10 or newer.
 
 ```bash
 git clone https://github.com/Nandanpatgar/DepenDency-Risk-RaDar.git
 cd DepenDency-Risk-RaDar
 
 python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
+source .venv/bin/activate      # on Windows: .venv\Scripts\activate
 
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
-Streamlit opens the app in your browser (usually `http://localhost:8501`).
+The app opens in your browser, usually at `http://localhost:8501`.
 
-### Try it
+To try it quickly, paste this into the Python scanner:
 
-- **Python scan:** enter `requests` with an older version such as `2.19.0`
-- **Node.js scan:** upload any project's `package-lock.json`
+```text
+requests==2.19.0
+flask==0.12.2
+```
 
-### Run the tests
+### Tests
 
 ```bash
 pip install pytest
 python -m pytest
 ```
 
-Run this from the repository root. `test_osv_client.py` may need internet access if it calls the live OSV API.
+Run this from the repository root. `tests/test_osv_client.py` is a manual script that calls the live OSV API rather than a pytest test, so pytest skips it.
 
-##  Reading the Results
+## Reading the results
 
-- 🔴 **Vulnerable:** one or more OSV records match this package version
-- 🟢 **No matching records:** OSV returned nothing for this version
-- ⚠️ **Scan failed:** the lookup failed, so the package's status is unknown
+- Vulnerable: at least one OSV record matches that package version.
+- No matching records: OSV returned nothing for that version.
+- Failed: the lookup did not complete, so the package's status is unknown.
 
-Counts are matching OSV records, not necessarily unique security issues, and severity is not inferred. A clean result does not guarantee a package is secure. Findings depend on OSV.dev's coverage and freshness.
+The counts are OSV records, not necessarily separate security issues, since one issue can have several records. No matching records does not prove a package is safe. Results depend on what OSV.dev covers and how recent its data is.
 
-### Report formats
+## Security notes
 
-| Format | Contents |
-|---|---|
-| **JSON** | Project name, ecosystem, generation time (UTC), summary metrics, and per-dependency vulnerability IDs, summaries, aliases and reference URLs |
-| **CSV** | One row per dependency: package, version, scan status, record count and vulnerability IDs |
+- Uploaded lockfiles are read as JSON only. No project code or install scripts are run.
+- API and network errors are shown in the results, not hidden.
 
-## 🔐 Security
+## Team
 
-- Uploaded lockfiles are parsed as JSON data; no project code or install scripts are ever executed.
-- Network or API failures are reported clearly instead of being hidden.
-
-## 👥 Team
-
-Built by **Clutch Crew** for **BYTE RACE 2026**.
+Built by Clutch Crew for BYTE RACE 2026.
