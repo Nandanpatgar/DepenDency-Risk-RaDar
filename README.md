@@ -1,32 +1,53 @@
-# Dependency Risk Radar 
+# DepenDency Risk RaDar
 
-**Find the risky dependencies. Understand why they're risky. Know what to fix.**
+**Dependency Risk Radar** is a dependency vulnerability analysis tool developed to help developers identify risky software dependencies, understand why they pose a security risk, and investigate possible remediation steps.
 
-Every project leans on code written by people we've never met. Most of it is fine, but sometimes a package has a known security hole and nobody notices until it matters.
+The project was developed in response to a problem statement presented at the **BYTE RACE Hackathon**, organized at Vivekananda College of Engineering and Technology (VCET), Puttur, Karnataka.
 
-Dependency Risk Radar is a Streamlit app that checks your Python and npm dependencies against the [OSV.dev](https://osv.dev/) vulnerability database. Give it a list of packages or a `package-lock.json`, and it shows you which ones have known vulnerabilities, how serious they are, which versions fix them, and lets you export everything as a report.
+The tool supports Python package scanning and Node.js dependency analysis, using the Open Source Vulnerabilities (OSV) database to retrieve known vulnerability information. It presents findings through an interactive dashboard with severity analysis, affected and fixed version details, remediation information, and advisory references when available.
 
-<img width="2736" height="1496" alt="Dependency Risk Radar dashboard" src="https://github.com/user-attachments/assets/538a347f-6ad8-43cd-96aa-9091530a05cd" />
+## Problem Statement
 
-## What it can do
+> Build tool that analyzes Node.js project's dependencies and tells the developer which packages are risky, why, and what to do about it.
 
-- **Scan Python packages (PyPI).** Enter one `name==version` per line.
-- **Scan npm projects.** Upload a `package-lock.json` (lockfile v2 or v3) and every resolved dependency gets checked, transitive ones included.
-- **Work out severity for each finding.** Critical, High, Medium, Low or Unknown, based on what OSV actually returns.
-- **Show fix guidance.** You'll see the fixed versions and affected version ranges from the OSV record, or a clear note when the record doesn't mention a fix.
-- **Organize results into four tabs.** Overview, Vulnerability Findings, Dependencies and Reports.
-- **Help you find things fast.** Filter findings by severity and search them, and filter dependencies by scan status.
-- **Export a report.** Download JSON or CSV with severity, CVSS score, fixed versions, affected ranges and a remediation status, with findings sorted by severity.
-- **Stay honest about failures.** If a package can't be scanned, it's marked as failed, never quietly treated as safe.
+## Project Objective
 
-### Still on the to-do list
+The objective of Dependency Risk Radar is to simplify dependency security analysis by bringing vulnerability identification, severity interpretation, remediation information, and reporting into a single workflow.
 
-- Dependency graph
-- npm Registry checks (deprecation, publish history, license)
-- Upgrade suggestions that respect your project's version constraints
-- `package.json` support
+Rather than simply reporting that a vulnerability exists, the tool helps developers investigate the affected package, understand the available security information, and identify potential next steps.
 
-## How it works
+## Key Features
+
+* **Multi-ecosystem scanning:** Supports Python package/version checks and Node.js dependency scanning.
+* **Node.js lockfile analysis:** Parses `package-lock.json` to extract package names and resolved versions, including transitive dependencies represented in the lockfile.
+* **OSV vulnerability lookup:** Queries OSV.dev for known vulnerabilities associated with the scanned packages and versions.
+* **Severity analysis:** Interprets available CVSS scores and severity information.
+* **Affected and fixed version information:** Displays version details when provided by vulnerability records.
+* **Remediation support:** Presents available fix information to help developers investigate corrective actions.
+* **Advisory references:** Provides links to additional vulnerability information when available.
+* **Interactive dashboard:** Summarizes findings and helps developers review vulnerability severity and prioritize investigation.
+* **Report generation:** Supports exporting scan results in JSON and CSV formats.
+* **Automated testing:** Includes tests for dependency parsing, vulnerability lookup, severity analysis, remediation, and report generation.
+
+## Project Structure
+
+```text
+DepenDency-Risk-RaDar/
+├── app.py                      # Streamlit interface, scan workflow, and dashboard
+├── node_scanner.py             # package-lock.json parser
+├── osv_client.py               # OSV.dev API client
+├── severity_analyzer.py        # CVSS parsing and severity classification
+├── report_generator.py         # Summary metrics, fix information, prioritization, JSON/CSV reports
+├── requirements.txt            # Python dependencies
+└── tests/
+    ├── test_node_scanner.py
+    ├── test_osv_client.py
+    ├── test_remediation.py
+    ├── test_report_generator.py
+    └── test_severity_analyzer.py
+```
+
+## System Workflow
 
 ```mermaid
 flowchart TD
@@ -44,89 +65,174 @@ flowchart TD
     J --> K[Download JSON / CSV report]
 ```
 
-### How severity is decided
 
-We don't guess. For each OSV record, the app checks these in order:
+### Workflow Explanation
 
-1. **A CVSS v3 or v4 vector in the record.** The score is calculated with the [`cvss`](https://pypi.org/project/cvss/) library and mapped to Low, Medium, High or Critical.
-2. **A severity label from the database**, such as a GitHub advisory label.
-3. **Otherwise, Unknown.**
+1. **Input:** The developer enters a Python package name and version or uploads a Node.js `package-lock.json` file.
+2. **Dependency processing:** The application extracts package names and versions for vulnerability checking.
+3. **Vulnerability lookup:** The OSV client queries OSV.dev for matching vulnerability records.
+4. **Severity analysis:** Available CVSS scores and severity information are interpreted to help assess the reported issues.
+5. **Remediation analysis:** Available affected versions, fixed versions, and remediation details are extracted.
+6. **Results presentation:** The dashboard displays findings, severity summaries, and supporting advisory references.
+7. **Report export:** Developers can download results in JSON or CSV format for further analysis.
 
-### Where fix information comes from
+## Technology Stack
 
-Fixed versions are read from the affected ranges in each OSV record. If a record doesn't list a fix, the app tells you so and points you to the advisory instead of making one up. A listed fix is simply the version OSV reports, so check that it plays nicely with the rest of your project before upgrading.
+| Component                  | Technology                           | Purpose                                          |
+| -------------------------- | ------------------------------------ | ------------------------------------------------ |
+| Frontend and dashboard     | Streamlit                            | Interactive user interface and results dashboard |
+| Application logic          | Python                               | Coordinates scanning, analysis, and reporting    |
+| Vulnerability intelligence | OSV.dev API                          | Retrieves known vulnerability records            |
+| Python ecosystem           | PyPI packages                        | Supports Python package/version scanning         |
+| Node.js ecosystem          | npm packages and `package-lock.json` | Supports Node.js dependency scanning             |
+| Severity analysis          | CVSS data, when available            | Supports vulnerability severity interpretation   |
+| Reporting                  | JSON and CSV                         | Enables exporting scan results                   |
+| Testing                    | pytest                               | Runs automated tests                             |
 
-## Tech stack
+## Getting Started
 
-Python, Streamlit, pandas, `requests`, `cvss`, and the OSV.dev API.
+### Prerequisites
 
-## Project structure
+* Python 3.10 or newer
+* pip
+* Internet connectivity to access the OSV.dev API
 
-```text
-DepenDency-Risk-RaDar/
-├── app.py                 # Streamlit app: pages, scan workflow, dashboard
-├── node_scanner.py        # package-lock.json parser
-├── osv_client.py          # OSV.dev API client
-├── severity_analyzer.py   # CVSS parsing and severity classification
-├── report_generator.py    # Summary metrics, fix info, prioritization, JSON and CSV reports
-├── requirements.txt
-└── tests/
-    ├── test_node_scanner.py
-    ├── test_osv_client.py
-    ├── test_remediation.py
-    ├── test_report_generator.py
-    └── test_severity_analyzer.py
-```
+Node.js and npm are only required if you want to generate a real `package-lock.json` file for testing.
 
-## Run it locally
-
-You'll need Python 3.10 or newer.
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/Nandanpatgar/DepenDency-Risk-RaDar.git
 cd DepenDency-Risk-RaDar
+```
 
+### 2. Create a Virtual Environment
+
+**Windows PowerShell**
+
+```powershell
 python -m venv .venv
-source .venv/bin/activate      # on Windows: .venv\Scripts\activate
+.\.venv\Scripts\Activate.ps1
+```
 
+**macOS / Linux**
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install Dependencies
+
+```bash
 pip install -r requirements.txt
+```
+
+### 4. Run the Application
+
+```bash
 streamlit run app.py
 ```
 
-The app opens in your browser, usually at `http://localhost:8501`.
+Open the local URL displayed in the terminal. Streamlit commonly uses:
 
-Want a quick test? Paste this into the Python scanner:
+```text
+http://localhost:8501
+```
+
+## Example Usage
+
+### Python Package Scanning
+
+Enter a package name and its exact version into the Python scanner.
+
+Example inputs:
 
 ```text
 requests==2.19.0
 flask==0.12.2
 ```
 
-### Tests
+These are example test inputs, not guaranteed vulnerability findings. Actual results depend on the records returned by OSV.dev.
+
+### Node.js Dependency Scanning
+
+Upload a Node.js project's `package-lock.json` file to scan the resolved dependency versions represented in the lockfile.
+
+To generate a test lockfile using npm:
+
+```bash
+mkdir radar-node-test
+cd radar-node-test
+npm init -y
+npm install lodash@4.17.20 minimist@1.2.5
+```
+
+Upload the generated `package-lock.json` through the application's Node.js scanning interface.
+
+The scanner reads the lockfile as JSON. It does not need to install the scanned dependencies to analyze their recorded package names and versions.
+
+## Understanding the Results
+
+* **Vulnerable:** At least one matching OSV vulnerability record was returned for the package version according to the application's lookup logic.
+* **No matching records:** OSV returned no matching vulnerability records for the package version. This does not guarantee that the package is secure.
+* **Failed:** The lookup did not complete successfully. The package's vulnerability status remains unknown.
+* **Severity and CVSS:** Available severity information helps developers understand the reported vulnerability's potential impact.
+* **Affected versions:** Package versions identified as affected by a vulnerability, when provided.
+* **Fixed versions:** Versions identified as containing a fix, when provided.
+* **Remediation information:** Available details that help developers investigate possible corrective actions.
+* **Advisory references:** Links to additional information about the reported vulnerability.
+* **JSON and CSV reports:** Exportable results for record keeping and further analysis.
+
+The number of OSV records returned should not automatically be interpreted as the number of unique security issues, because multiple records can sometimes describe related vulnerability information.
+
+## Testing
+
+Install pytest if it is not already available:
 
 ```bash
 pip install pytest
+```
+
+Run the test suite from the repository root:
+
+```bash
 python -m pytest
 ```
 
-Run this from the repository root. Heads up: `tests/test_osv_client.py` is a manual script that calls the live OSV API rather than a pytest test, so pytest skips it.
+The project includes tests covering:
 
-## Reading the results
+* Node.js lockfile parsing
+* OSV client behavior
+* Remediation information
+* Report generation
+* Severity analysis
 
-- **Vulnerable:** at least one OSV record matches that package version.
-- **No matching records:** OSV returned nothing for that version.
-- **Failed:** the lookup didn't complete, so that package's status is unknown.
+Note: `tests/test_osv_client.py` may require separate execution if it is implemented as a manual script rather than a test file collected by pytest. Check the test output and the file's implementation to confirm its behavior.
 
-A few things worth remembering:
+## Security Considerations and Limitations
 
-- The counts are OSV *records*, not necessarily separate security issues, since one issue can have several records.
-- "No matching records" doesn't prove a package is safe. Results depend on what OSV.dev covers and how fresh its data is.
+* The application identifies known vulnerabilities represented in OSV.dev records; it does not guarantee that a dependency is free of security flaws.
+* Results depend on the coverage and freshness of the vulnerability database.
+* Some records may not provide CVSS scores, fixed versions, or detailed remediation guidance.
+* A vulnerability's practical risk depends on the issue and how the affected dependency is used by the application.
+* Recommended upgrades should be reviewed and tested for compatibility before deployment.
+* Uploaded lockfiles are parsed as JSON; the application does not need to execute the uploaded project's code or installation scripts.
+* Network and API failures should be treated as unknown results rather than evidence that a package is safe.
 
-## Security notes
+Dependency Risk Radar is intended to support vulnerability investigation and remediation decisions, not replace a comprehensive security review.
 
-- Uploaded lockfiles are read as JSON only. No project code or install scripts are ever run.
-- API and network errors are shown in the results, never hidden.
+## Hackathon Details
+
+**Event:** BYTE RACE Hackathon
+**Institution:** Vivekananda College of Engineering and Technology (VCET)
+**Location:** Puttur, Karnataka, India
+**Problem Statement:** Build a tool that analyzes a Node.js project's dependencies and tells the developer which packages are risky, why, and what to do about it.
 
 ## Team
 
-Built by **Clutch Crew** for **BYTE RACE 2026**. 
+**Team Name:** Clutch Crew
+
+Developed as a solution to the dependency security problem statement presented at BYTE RACE Hackathon.
+
+
