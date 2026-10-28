@@ -4,7 +4,9 @@
 
 Dependency Risk Radar is a Streamlit app that checks software dependencies against the [OSV.dev](https://osv.dev/) vulnerability database. Scan a single Python package, or upload an npm `package-lock.json`, review a security overview, and download the results as JSON or CSV.
 
-<img width="2628" height="1088" alt="Screenshot 2026-10-28 113235" src="https://github.com/user-attachments/assets/d5809e85-6dd9-4f9b-88fc-7aded24e1a24" />
+
+
+<img width="2736" height="1496" alt="Screenshot 2026-10-28 122718" src="https://github.com/user-attachments/assets/538a347f-6ad8-43cd-96aa-9091530a05cd" />
 
 
 ## ✨ Features
