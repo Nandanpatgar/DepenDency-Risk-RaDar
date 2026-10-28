@@ -73,8 +73,5 @@ Abandonment detection · license compatibility checks · better upgrade suggesti
 
 ## 👥 Team
 
-Built by **[YOUR TEAM NAME]** for **BYTE RACE 2026**.
+Built by **Clutch Crew** for **BYTE RACE 2026**.
 
-## 📄 License
-
-To be decided (e.g. [MIT](https://choosealicense.com/licenses/mit/)).
