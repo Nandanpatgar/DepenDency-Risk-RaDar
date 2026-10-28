@@ -1,4 +1,4 @@
-# Dependency Risk Radar 🛡️
+# Dependency Risk Radar 
 
 **Identify risky dependencies. Understand why they are risky. Know what to fix.**
 
@@ -46,11 +46,11 @@ flowchart TD
     I --> J[Download JSON / CSV report]
 ```
 
-## 🧰 Tech Stack
+##  Tech Stack
 
 Python · [Streamlit](https://streamlit.io/) · `requests` · [OSV.dev API](https://osv.dev/)
 
-## 🏗️ Project Structure
+## Project Structure
 
 ```text
 DepenDency-Risk-RaDar/
@@ -65,7 +65,7 @@ DepenDency-Risk-RaDar/
     └── test_report_generator.py
 ```
 
-## 🚀 Getting Started
+##  Getting Started
 
 Requires Python 3.10+ and Git.
 
@@ -96,7 +96,7 @@ python -m pytest
 
 Run this from the repository root. `test_osv_client.py` may need internet access if it calls the live OSV API.
 
-## 📊 Reading the Results
+##  Reading the Results
 
 - 🔴 **Vulnerable:** one or more OSV records match this package version
 - 🟢 **No matching records:** OSV returned nothing for this version
