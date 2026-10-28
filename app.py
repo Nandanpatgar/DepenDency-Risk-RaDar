@@ -1,227 +1,348 @@
+import json
 
 import requests
 import streamlit as st
 
-# --------------------------------------------------
-# 1. Page configuration
-# --------------------------------------------------
+from node_scanner import parse_package_lock
+from osv_client import check_package_vulnerabilities
+
 
 st.set_page_config(
     page_title="Dependency Risk Radar",
     page_icon="🛡️",
-    layout="centered"
+    layout="wide"
 )
 
-OSV_API_URL = "https://api.osv.dev/v1/query"
 
+# -------------------- Helper Functions --------------------
 
-# --------------------------------------------------
-# 2. Vulnerability lookup service
-# --------------------------------------------------
-
-def check_vulnerabilities(package_name, package_version):
-    """
-    Query OSV for known vulnerabilities affecting
-    a specific package version in the PyPI ecosystem.
-    """
-
-    payload = {
-        "package": {
-            "name": package_name,
-            "ecosystem": "PyPI"
-        },
-        "version": package_version
-    }
-
-    response = requests.post(
-        OSV_API_URL,
-        json=payload,
-        timeout=15
+def scan_dependency(package_name, package_version, ecosystem):
+    """Scan one package using the OSV vulnerability database."""
+    return check_package_vulnerabilities(
+        package_name,
+        package_version,
+        ecosystem
     )
 
-    response.raise_for_status()
 
-    data = response.json()
+def display_vulnerabilities(package_name, package_version, vulnerabilities):
+    """Display vulnerability information for one package."""
 
-    return data.get("vulns", [])
+    if not vulnerabilities:
+        st.success(
+            f"No matching OSV vulnerability records found for "
+            f"{package_name} {package_version}."
+        )
+        return
+
+    st.error(
+        f"{len(vulnerabilities)} matching vulnerability record(s) "
+        f"found for {package_name} {package_version}."
+    )
+
+    for vulnerability in vulnerabilities:
+        with st.expander(
+            vulnerability.get("id", "Unknown vulnerability")
+        ):
+            st.write(
+                "**Summary:**",
+                vulnerability.get("summary") or "No summary available"
+            )
+
+            aliases = vulnerability.get("aliases", [])
+
+            if aliases:
+                st.write("**Aliases:**", ", ".join(aliases))
+
+            details = vulnerability.get("details")
+
+            if details:
+                st.write("**Details:**", details)
+
+            references = vulnerability.get("references", [])
+
+            if references:
+                st.write("**References:**")
+
+                for reference in references[:5]:
+                    url = reference.get("url")
+
+                    if url:
+                        st.markdown(f"- [View reference]({url})")
 
 
-# --------------------------------------------------
-# 3. Application interface
-# --------------------------------------------------
+# -------------------- Application Header --------------------
 
 st.title("Dependency Risk Radar")
 
 st.write(
-    "Identify known security vulnerabilities in "
-    "your software dependencies."
+    "Identify known vulnerabilities in software dependencies "
+    "using the OSV vulnerability database."
+)
+
+st.caption(
+    "Current support: Python packages (PyPI) and Node.js packages (npm)."
 )
 
 st.divider()
 
-st.subheader("Dependency Risk Analysis")
 
-st.write(
-    "Enter a Python package and its installed version "
-    "to check for known vulnerabilities."
-)
+# -------------------- Scan Mode --------------------
 
-package_name = st.text_input(
-    "Package name",
-    placeholder="Example: requests"
-)
-
-package_version = st.text_input(
-    "Installed version",
-    placeholder="Example: 2.19.1"
+scan_mode = st.radio(
+    "Choose scanning mode",
+    ["Python Package Scan", "Node.js Project Scan"],
+    horizontal=True
 )
 
 
-# --------------------------------------------------
-# 4. Run vulnerability analysis
-# --------------------------------------------------
+# -------------------- Python Scanner --------------------
 
-if st.button("Scan Dependency", type="primary"):
+if scan_mode == "Python Package Scan":
 
-    package_name = package_name.strip()
-    package_version = package_version.strip()
+    st.subheader("Python Package Vulnerability Scan")
 
-    if not package_name or not package_version:
-        st.warning(
-            "Please enter both a package name and version."
+    st.write(
+        "Enter a Python package name and its installed version."
+    )
+
+    with st.form("python_scan_form"):
+
+        package_name = st.text_input(
+            "Package name",
+            placeholder="Example: requests"
         )
 
-    else:
-        with st.spinner(
-            "Checking the OSV vulnerability database..."
-        ):
-            try:
-                vulnerabilities = check_vulnerabilities(
-                    package_name,
-                    package_version
-                )
+        package_version = st.text_input(
+            "Installed version",
+            placeholder="Example: 2.31.0"
+        )
 
-                st.divider()
+        submitted = st.form_submit_button(
+            "Analyze Dependency",
+            type="primary"
+        )
 
-                st.subheader("Scan Results")
+    if submitted:
 
-                st.write(
-                    f"**Package:** {package_name}"
-                )
+        if not package_name.strip() or not package_version.strip():
+            st.warning(
+                "Please enter both the package name and installed version."
+            )
 
-                st.write(
-                    f"**Installed version:** {package_version}"
-                )
+        else:
+            with st.spinner("Checking the OSV vulnerability database..."):
 
-                st.write("**Ecosystem:** PyPI")
-
-                if vulnerabilities:
-
-                    st.error(
-                        f"Found {len(vulnerabilities)} "
-                        "known vulnerability record(s)."
+                try:
+                    vulnerabilities = scan_dependency(
+                        package_name.strip(),
+                        package_version.strip(),
+                        "PyPI"
                     )
 
-                    for vulnerability in vulnerabilities:
+                    display_vulnerabilities(
+                        package_name.strip(),
+                        package_version.strip(),
+                        vulnerabilities
+                    )
 
-                        vulnerability_id = vulnerability.get(
-                            "id",
-                            "Unknown ID"
-                        )
+                except requests.RequestException as error:
+                    st.error(
+                        f"Could not contact the OSV API: {error}"
+                    )
 
-                        summary = vulnerability.get(
-                            "summary"
-                        ) or "No summary provided."
+                except ValueError as error:
+                    st.error(f"Invalid API response: {error}")
 
-                        with st.expander(
-                            f"{vulnerability_id}: {summary}"
-                        ):
-                            st.write("**Vulnerability ID:**")
-                            st.write(vulnerability_id)
 
-                            st.write("**Summary:**")
-                            st.write(summary)
+# -------------------- Node.js Scanner --------------------
 
-                            details = vulnerability.get(
-                                "details"
-                            )
+elif scan_mode == "Node.js Project Scan":
 
-                            if details:
-                                st.write("**Details:**")
-                                st.write(details)
+    st.subheader("Node.js Project Vulnerability Scan")
 
-                            aliases = vulnerability.get(
-                                "aliases", []
-                            )
+    st.write(
+        "Upload a package-lock.json file to scan the project's "
+        "resolved npm dependencies."
+    )
 
-                            if aliases:
-                                st.write("**Aliases:**")
-                                st.write(", ".join(aliases))
+    uploaded_file = st.file_uploader(
+        "Upload package-lock.json",
+        type=["json"]
+    )
 
-                            references = vulnerability.get(
-                                "references", []
-                            )
+    if uploaded_file is not None:
 
-                            if references:
-                                st.write("**References:**")
+        if st.button("Scan Node.js Project", type="primary"):
 
-                                for reference in references:
-                                    url = reference.get("url")
+            try:
+                file_content = uploaded_file.getvalue().decode("utf-8")
 
-                                    if url:
-                                        st.markdown(
-                                            f"- [{url}]({url})"
-                                        )
+                dependencies = parse_package_lock(file_content)
 
-                    st.caption(
-                        "Review the vulnerability records and "
-                        "affected-version ranges before deciding "
-                        "whether remediation is required."
+                if not dependencies:
+                    st.warning(
+                        "No resolved dependencies were found in this lockfile."
                     )
 
                 else:
-                    st.success(
-                        "No known vulnerability records were "
-                        "returned for this package version."
+                    st.write(
+                        f"**Dependencies discovered:** {len(dependencies)}"
                     )
 
-                    st.info(
-                        "This does not guarantee that the package "
-                        "is secure. The result depends on the "
-                        "coverage and current state of the "
-                        "vulnerability database."
+                    progress_bar = st.progress(0)
+                    results = []
+                    failures = []
+
+                    for index, dependency in enumerate(dependencies):
+
+                        package_name = dependency["name"]
+                        package_version = dependency["version"]
+
+                        try:
+                            vulnerabilities = scan_dependency(
+                                package_name,
+                                package_version,
+                                "npm"
+                            )
+
+                            results.append({
+                                "Package": package_name,
+                                "Version": package_version,
+                                "Vulnerabilities": len(vulnerabilities),
+                                "Details": vulnerabilities,
+                                "Status": "Completed"
+                            })
+
+                        except requests.RequestException as error:
+                            failures.append({
+                                "Package": package_name,
+                                "Version": package_version,
+                                "Error": str(error)
+                            })
+
+                            results.append({
+                                "Package": package_name,
+                                "Version": package_version,
+                                "Vulnerabilities": None,
+                                "Details": [],
+                                "Status": "Scan failed"
+                            })
+
+                        progress_bar.progress(
+                            (index + 1) / len(dependencies)
+                        )
+
+                    st.session_state["node_scan_results"] = results
+                    st.session_state["node_scan_failures"] = failures
+
+            except (ValueError, UnicodeDecodeError, json.JSONDecodeError) as error:
+                st.error(f"Could not process the lockfile: {error}")
+
+    # Display the most recent results while this session is active.
+    results = st.session_state.get("node_scan_results")
+
+    if results:
+        st.divider()
+        st.subheader("Node.js Scan Report")
+
+        completed_results = [
+            result for result in results
+            if result["Status"] == "Completed"
+        ]
+
+        failed_results = [
+            result for result in results
+            if result["Status"] == "Scan failed"
+        ]
+
+        vulnerable_results = [
+            result for result in completed_results
+            if result["Vulnerabilities"] > 0
+        ]
+
+        total_findings = sum(
+            result["Vulnerabilities"]
+            for result in completed_results
+        )
+
+        col1, col2, col3, col4 = st.columns(4)
+
+        col1.metric(
+            "Dependencies",
+            len(results)
+        )
+
+        col2.metric(
+            "Successfully scanned",
+            len(completed_results)
+        )
+
+        col3.metric(
+            "Packages with findings",
+            len(vulnerable_results)
+        )
+
+        col4.metric(
+            "Vulnerability records",
+            total_findings
+        )
+
+        st.caption(
+            "These are counts of matching OSV records, not necessarily "
+            "unique underlying security issues. Severity is not inferred."
+        )
+
+        st.subheader("Dependency Results")
+
+        for result in results:
+
+            package_name = result["Package"]
+            package_version = result["Version"]
+
+            with st.expander(
+                f"{package_name} {package_version}"
+            ):
+
+                if result["Status"] == "Scan failed":
+                    st.warning(
+                        "The scan failed for this package. "
+                        "Its security status is unknown."
                     )
 
-            except requests.Timeout:
-                st.error(
-                    "The vulnerability service took too long "
-                    "to respond. Please try again."
-                )
+                else:
+                    display_vulnerabilities(
+                        package_name,
+                        package_version,
+                        result["Details"]
+                    )
 
-            except requests.RequestException as error:
-                st.error(
-                    "Unable to retrieve vulnerability data. "
-                    "Check your internet connection and try again."
-                )
+        if failed_results:
+            st.warning(
+                f"{len(failed_results)} package(s) could not be scanned. "
+                "Review these failures before relying on the report."
+            )
 
-                st.caption(
-                    f"Technical details: {error}"
-                )
+            with st.expander("Failed package scans"):
+                for failure in st.session_state.get(
+                    "node_scan_failures", []
+                ):
+                    st.write(
+                        f"**{failure['Package']} "
+                        f"{failure['Version']}**"
+                    )
+                    st.caption(failure["Error"])
 
-            except ValueError:
-                st.error(
-                    "The vulnerability service returned "
-                    "an invalid response."
-                )
+        st.info(
+            "A scan with zero matching vulnerability records does not "
+            "guarantee that the dependencies are secure."
+        )
 
 
-# --------------------------------------------------
-# 5. Footer
-# --------------------------------------------------
+# -------------------- Footer --------------------
 
 st.divider()
 
 st.caption(
-    "Dependency Risk Radar | Known Vulnerability Scanner"
+    "Dependency Risk Radar | Evidence from the OSV vulnerability database"
 )
-
